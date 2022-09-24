@@ -41,9 +41,9 @@ DriveMode get_drive_mode()
 */
 void readIMU()
 {
-  //imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  //pitch = euler.y();
-  //roll = euler.z(); // * get_roll_multiplier();
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  pitch = euler.y();
+  roll = euler.z(); // * get_roll_multiplier();
 }
 
 bool in_rc_deadband(int value)

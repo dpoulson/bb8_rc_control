@@ -28,12 +28,20 @@
 #include <PID_v1.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
+#include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <ESP32Servo.h>
+#include "DFRobotDFPlayerMini.h"
 
 #include "constants.h"
 #include "enums.h"
 #include <EEPROM.h>
+
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+
 
 // PID1 is for the side to side tilt
 double Pk1 = 14; // 15.0;
@@ -75,7 +83,7 @@ Servo servos;
 bfs::SbusRx sbus_rx(&Serial2);
 
 // Sound
-//DFRobotDFPlayerMini myDFPlayer;
+DFRobotDFPlayerMini myDFPlayer;
 
 // BTS7960 Motor Drivers
 BTS7960 driveController(DRIVE_EN_PIN, DRIVE_L_PWM_PIN, DRIVE_R_PWM_PIN);
@@ -83,7 +91,7 @@ BTS7960 s2sController(S2S_EN_PIN, S2S_L_PWM_PIN, S2S_R_PWM_PIN);
 BTS7960 flywheelController(DRIVE_EN_PIN, FLYWHEEL_L_PWM_PIN, FLYWHEEL_R_PWM_PIN);
 
 // IMU
-// Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x28);
+Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x28);
 float pitch, roll;
 
 // S2S pot smoothing
@@ -94,8 +102,18 @@ int readIndex = 0;
 int total = 0;
 int average = 0;
 
+unsigned long lastMillis;
+
+
+Adafruit_NeoPixel body = Adafruit_NeoPixel(NEOPIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
 DriveMode driveMode = DriveMode::Disabled;
 std::array<int16_t, bfs::SbusRx::NUM_CH()> sbus_data;
+
+
+/*********************************
+ * Setup
+ */
 void setup()
 {
   sbus_rx.Begin(16,17);
@@ -122,7 +140,7 @@ void setup()
   // Motor Drivers
   driveController.Enable();
   s2sController.Enable();
-  // flywheelController.Enable();
+  flywheelController.Enable();
 
   // PID Setup - S2S servo
   PID1.SetMode(AUTOMATIC);
@@ -145,12 +163,12 @@ void setup()
   PID4.SetSampleTime(15);
 
   /* Initialise the IMU */
-  //if (!bno.begin())
-  //{
-  //  Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-  //  while (1)
-  //    ;
-  //}
+  if (!bno.begin())
+  {
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while (1)
+      ;
+  }
 
   // TODO: loadOffsets
   pitchOffset = 4; //-0.55; //4.4;
@@ -164,16 +182,62 @@ void setup()
     readings[thisReading] = potOffsetS2S;
   }
 
+
+  // Setup Wifi and OTA updates
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Connection Failed! Rebooting...");
+    delay(5000);
+    ESP.restart();
+  }
+
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
+
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial.println("Start updating " + type);
+    })
+    .onEnd([]() {
+      Serial.println("\nEnd");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    })
+    .onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+
+  ArduinoOTA.begin();
+  
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  
   // Sound
-  //Serial1.begin(9600);
-  //myDFPlayer.begin(Serial1);
-  //myDFPlayer.volume(30);
-  //myDFPlayer.play(1);
+  Serial1.begin(9600);
+  myDFPlayer.begin(Serial1);
+  myDFPlayer.volume(30);
+  myDFPlayer.play(1);
 }
+
+/**************************
+ * Main Loop
+ */
 
 void loop()
 {
-  //readIMU();
+  readIMU();
 
   if (sbus_rx.Read())
   {
@@ -189,6 +253,7 @@ void loop()
       //dome_spin();
       dome_servos();
       //sound_trigger();
+      Serial.println();
     }
     else if (driveMode == DriveMode::Static)
     {
@@ -202,41 +267,21 @@ void loop()
       // Disabled
       disable_drive();
     }
-    //    // debug_rc_inputs();
-    //    DriveMode mode = get_drive_mode();
-    //
-    //    switch (mode)
-    //    {
-    //    case DriveMode::Enabled:
-    //      enable_drive();
-    //      main_drive();
-    //      flywheel();
-    //      side_to_side();
-    //      break;
-    //    }
-    //    if (mode ==)
-    //    {
-    //      disable_drive();
-    //    }
 
-    //     motorsEnabled = is_drive_enabled();
-    //     if (motorsEnabled)
-    //     {
-    //       enable_drive();
-    //       main_drive();
-    //       flywheel();
-    //       side_to_side();
-    //     }
-    //     else
-    //     {
-    //       disable_drive();
-    //     }
-    //     dome_spin();
-    //     dome_servos();
-    //     sound_trigger();
-
-    // Serial.print(sbus_rx.lost_frame());
-    // Serial.print("\t");
-    // Serial.println(sbus_rx.failsafe());
   }
+  if ((millis() - lastMillis) > 50)
+  {
+    panel1();
+    panel2();
+    panel3();
+    panel4();
+    panel5();
+    panel6();
+
+    body.show();
+
+    lastMillis = millis();
+  }
+  ArduinoOTA.handle();
+
 }

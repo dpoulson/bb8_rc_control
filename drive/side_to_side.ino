@@ -74,4 +74,12 @@ void side_to_side()
   {
     s2sController.Stop();
   }
+  Serial.print(s2s_current_position);
+  Serial.print(" ");
+  Serial.print(s2s_target_position);
+  Serial.print(" ");
+  Serial.print(pot);
+  Serial.print(" ");
+  Serial.print(Output1);
+  Serial.print(" ");
 }
