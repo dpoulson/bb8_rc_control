@@ -32,6 +32,7 @@
 #include <Wire.h>
 #include <ESP32Servo.h>
 #include "DFRobotDFPlayerMini.h"
+#include <HardwareSerial.h>
 
 #include "constants.h"
 #include "enums.h"
@@ -169,6 +170,7 @@ void setup()
     while (1)
       ;
   }
+  Serial.println("IMU Online....");
 
   // TODO: loadOffsets
   pitchOffset = 4; //-0.55; //4.4;
@@ -225,10 +227,13 @@ void setup()
   Serial.println(WiFi.localIP());
   
   // Sound
-  Serial1.begin(9600);
+  Serial1.begin(9600, SERIAL_8N1, 4, 5 );
   myDFPlayer.begin(Serial1);
-  myDFPlayer.volume(30);
+  myDFPlayer.volume(20);
   myDFPlayer.play(1);
+
+
+  Serial.println("Startup complete!");
 }
 
 /**************************
@@ -237,7 +242,7 @@ void setup()
 
 void loop()
 {
-  readIMU();
+  //readIMU();
 
   if (sbus_rx.Read())
   {
@@ -252,15 +257,17 @@ void loop()
       side_to_side();
       //dome_spin();
       dome_servos();
-      //sound_trigger();
-      Serial.println();
+      sound_trigger();
+      #ifdef GLOBAL_DEBUG
+        Serial.println();
+      #endif
     }
     else if (driveMode == DriveMode::Static)
     {
       disable_drive();
       //dome_spin();
       dome_servos();
-      //sound_trigger();
+      sound_trigger();
     }
     else
     {

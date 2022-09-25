@@ -20,7 +20,7 @@ void side_to_side()
 
   Setpoint2 = s2s_current_position;
 
-  // TODO: Rolling average
+  // Rolling average
   total = total - readings[readIndex];
   readings[readIndex] = analogRead(S2S_POT_PIN) + S2S_OFFSET;
   total = total + readings[readIndex];
@@ -45,7 +45,7 @@ void side_to_side()
 
   Setpoint1 = Output2;
 
-  Input1 = map(pot, 0, 1024, -255, 255);
+  Input1 = map(pot, 0, 4096, 255, -255);
 
   Input1 = constrain(Input1, -S2S_MAX_ANGLE, S2S_MAX_ANGLE);
   Setpoint1 = constrain(Setpoint1, -S2S_MAX_ANGLE, S2S_MAX_ANGLE);
@@ -62,24 +62,50 @@ void side_to_side()
 
   if (Output1 < 0)
   {
-    Output1a = abs(Output1);
-    s2sController.TurnLeft(Output1a);
+    s2sController.TurnLeft(abs(Output1));
+    #ifdef S2S_DEBUG
+      Serial.print("Left ");
+    #endif
   }
   else if (Output1 > 0)
   {
-    Output1a = abs(Output1);
-    s2sController.TurnRight(Output1a);
+    s2sController.TurnRight(abs(Output1));
+    #ifdef S2S_DEBUG
+      Serial.print("Right ");
+    #endif
   }
   else
   {
     s2sController.Stop();
-  }
-  Serial.print(s2s_current_position);
-  Serial.print(" ");
-  Serial.print(s2s_target_position);
-  Serial.print(" ");
-  Serial.print(pot);
-  Serial.print(" ");
-  Serial.print(Output1);
-  Serial.print(" ");
+    
+    #ifdef S2S_DEBUG
+      Serial.print("Stop ");
+    #endif
+  } 
+  
+  #ifdef S2S_DEBUG
+    Serial.print(s2s_current_position);
+    Serial.print(" ");
+    Serial.print(s2s_target_position);
+    Serial.print(" ");
+    Serial.print(pot);
+    Serial.print(" |Pk1 ");
+    Serial.print(Pk1);
+    Serial.print(" ");
+    Serial.print(sbus_rx.ch()[CH_ROLL_OFFSET]);
+    Serial.print(" |1 ");
+    Serial.print(Input1);
+    Serial.print(" ");
+    Serial.print(Setpoint1);
+    Serial.print(" "); 
+    Serial.print(Output1);
+    Serial.print(" |2 ");
+    Serial.print(Input2);
+    Serial.print(" ");  
+    Serial.print(Setpoint2);
+    Serial.print(" "); 
+    Serial.print(Output2);
+    Serial.print(" ");
+  #endif
+  
 }

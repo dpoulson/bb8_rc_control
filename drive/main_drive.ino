@@ -11,17 +11,17 @@ void main_drive()
   Setpoint3 = constrain(driveSpeed, -55, 55);
   Input3 = pitch + pitchOffset;
   PID3.Compute();
-/*
-  Serial.print("Drive: ");
-  Serial.print(driveRaw);
-  Serial.print(" ");
-  Serial.print(Setpoint3);
-  Serial.print(" ");
-  Serial.print(Input3);
-  Serial.print(" ");
-  Serial.print(Output3);
-  Serial.print(" ");
-  */
+  #ifdef DRIVE_DEBUG
+    Serial.print("Drive: ");
+    Serial.print(driveRaw);
+    Serial.print(" ");
+    Serial.print(Setpoint3);
+    Serial.print(" ");
+    Serial.print(Input3);
+    Serial.print(" ");
+    Serial.print(Output3);
+    Serial.print(" ");
+  #endif
   if (Output3 >= 1)
   {
     Output3a = abs(Output3);

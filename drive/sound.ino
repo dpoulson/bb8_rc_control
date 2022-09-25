@@ -47,16 +47,21 @@ void sound_trigger()
  */
 void play_sound()
 {
+  int volume = map(sbus_rx.ch()[CH_SOUND_VOLUME], RC_MIN, RC_MAX, 0, 50);
+  myDFPlayer.volume(volume);
   soundRaw = sbus_rx.ch()[CH_SOUND_BANK];
-  soundBank = map(soundRaw, 172, 1811, 0, 2);
+  soundBank = map(soundRaw, RC_MIN, RC_MAX, 0, 2);
+  Serial.println(soundRaw);
   if (soundBank == 2)
   {
     // Star Wars sounds
-    //myDFPlayer.play(random(50, 53));
+    myDFPlayer.play(random(50, 53));
+    Serial.println("Playing Star Wars Sound");
   }
   else
   {
     // BB-8 Sounds
-    //myDFPlayer.play(random(0, 49));
+    myDFPlayer.play(random(0, 49));
+    Serial.println("Playing random BB8 Sound");
   }
 }
