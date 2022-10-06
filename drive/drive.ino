@@ -23,6 +23,8 @@
 */
 #include "Arduino.h"
 #include "sbus.h"
+#include <SPort.h>
+#include <esp_now.h>
 
 #include "BTS7960.h"
 #include <PID_v1.h>
@@ -78,10 +80,14 @@ float pitchOffset, rollOffset, potOffsetS2S;
 bool motorsEnabled = true;
 
 // Dome Servos
-Servo servos;
+Servo servo1;
+Servo servo2;
 
 /* SbusRx object on Serial1 */
 bfs::SbusRx sbus_rx(&Serial2);
+SPortHub hub(0x12, 17);
+SimpleSPortSensor tel_pitch(0x5900);
+SimpleSPortSensor tel_roll(0x5901);
 
 // Sound
 DFRobotDFPlayerMini myDFPlayer;
@@ -105,10 +111,14 @@ int average = 0;
 
 unsigned long lastMillis;
 
+uint8_t dome_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+struct dome_message currentDomeMessage;
+esp_now_peer_info_t peerDome;
 
 Adafruit_NeoPixel body = Adafruit_NeoPixel(NEOPIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 DriveMode driveMode = DriveMode::Disabled;
+CalibrationMode calibrationMode = CalibrationMode::CalOff;
 std::array<int16_t, bfs::SbusRx::NUM_CH()> sbus_data;
 
 
@@ -225,14 +235,44 @@ void setup()
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  Serial.println(WiFi.macAddress());
   
   // Sound
-  Serial1.begin(9600, SERIAL_8N1, 4, 5 );
-  myDFPlayer.begin(Serial1);
-  myDFPlayer.volume(20);
-  myDFPlayer.play(1);
+  #ifdef AUDIO_ENABLED
+    Serial1.begin(9600, SERIAL_8N1, 4, 5 );
+    myDFPlayer.begin(Serial1);
+    myDFPlayer.volume(20);
+    myDFPlayer.play(1);
+  #endif
 
+  servo1.setPeriodHertz(50);
+  servo1.attach(DOME_NECK_1, 1000, 2000);
+  servo2.setPeriodHertz(50);
+  servo1.attach(DOME_NECK_2, 1000, 2000);
 
+  hub.registerSensor(tel_roll);       //Add sensor to the hub
+  hub.registerSensor(tel_pitch);
+  hub.begin();   
+
+  if (esp_now_init() != 0) {
+    Serial.println("Problem during ESP-NOW init");
+    return;
+  }
+  
+  // Register peer
+  memcpy(peerDome.peer_addr, dome_mac, 6);
+  peerDome.channel = 0;  
+  peerDome.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerDome) != ESP_OK){
+    Serial.println("Failed to add Dome");
+    return;
+  }
+
+  currentDomeMessage.psi = false;
+  currentDomeMessage.effect = 0;
+  
   Serial.println("Startup complete!");
 }
 
@@ -242,12 +282,20 @@ void setup()
 
 void loop()
 {
-  //readIMU();
+  readIMU();
+  tel_roll.value = roll;
+  tel_pitch.value = pitch;
+  #ifdef IMU_DEBUG
+    Serial.print(roll);
+    Serial.print(" ");
+    Serial.print(pitch);
+  #endif
 
   if (sbus_rx.Read())
   {
 
     driveMode = get_drive_mode();
+    Serial.print(driveMode);
 
     if (driveMode == DriveMode::Enabled)
     {
@@ -257,22 +305,34 @@ void loop()
       side_to_side();
       //dome_spin();
       dome_servos();
-      sound_trigger();
+      #ifdef AUDIO_ENBLED
+        sound_trigger();
+      #endif
       #ifdef GLOBAL_DEBUG
         Serial.println();
       #endif
+
     }
     else if (driveMode == DriveMode::Static)
     {
       disable_drive();
       //dome_spin();
       dome_servos();
-      sound_trigger();
+      #ifdef AUDIO_ENBLED
+        sound_trigger();
+      #endif
+      #ifdef GLOBAL_DEBUG
+        Serial.println();
+      #endif
     }
     else
     {
       // Disabled
       disable_drive();
+      calibrationMode = get_calibration_mode();
+      #ifdef GLOBAL_DEBUG
+        Serial.println();
+      #endif
     }
 
   }
@@ -289,6 +349,15 @@ void loop()
 
     lastMillis = millis();
   }
+  hub.handle();
+  esp_err_t result = esp_now_send(dome_mac, (uint8_t *) &currentDomeMessage, sizeof(currentDomeMessage));
+  if (result == ESP_OK) {
+    Serial.println("Sent with success");
+  }
+  else {
+    Serial.println("Error sending the data");
+  }
   ArduinoOTA.handle();
+
 
 }

@@ -29,6 +29,22 @@ DriveMode get_drive_mode()
     return DriveMode::Disabled;
   }
 }
+CalibrationMode get_calibration_mode()
+{
+  int calibrationVal = sbus_rx.ch()[CH_CALIBRATE];
+  if (calibrationVal == RC_MAX)
+  {
+    return CalibrationMode::CalOff;
+  }
+  else if (calibrationVal == RC_MID)
+  {
+    return CalibrationMode::CalEnabled;
+  }
+  else
+  {
+    return CalibrationMode::CalSave;
+  }
+}
 
 /**
    ReadIMU

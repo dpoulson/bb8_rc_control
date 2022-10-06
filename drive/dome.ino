@@ -23,18 +23,18 @@ void dome_spin()
   {
     domeRaw = sbus_rx.ch()[CH_DOME_SPIN];
 
-    if (domeRaw > 250 && domeRaw < 1700)
+    if (domeRaw > RC_MIN + 100 && domeRaw < RC_MAX -100)
     {
       Setpoint4 = map(domeRaw, RC_MIN, RC_MAX, 0, 1024);
-      Input4 = analogRead(DOME_POT_PIN) + 15;
+      Input4 = analogRead(DOME_POT_PIN) + DOME_POT_OFFSET;
       PID4.Compute();
       domeSpeed = constrain((int)Output4, -255, 255);
     }
-    else if (domeRaw <= 250)
+    else if (domeRaw <= RC_MIN + 100)
     {
       domeSpeed = -255;
     }
-    else if (domeRaw >= 1700)
+    else if (domeRaw >= RC_MAX - 100)
     {
       domeSpeed = 255;
     }
@@ -112,8 +112,8 @@ void dome_servos()
     varServo1 = map(varServo1, 0, 180, 1000, 2000);
     varServo2 = map(varServo2, 0, 180, 1000, 2000);
 
-    //servos.writeMicroseconds(13, varServo1);
-    //servos.writeMicroseconds(14, varServo2);
+    servo1.writeMicroseconds(varServo1);
+    servo2.writeMicroseconds(varServo2);
   }
   else
   {
