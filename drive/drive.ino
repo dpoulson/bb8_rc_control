@@ -109,9 +109,9 @@ int readIndex = 0;
 int total = 0;
 int average = 0;
 
-unsigned long lastMillis;
+unsigned long lastMillis, soundMillis;
 
-uint8_t dome_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t dome_mac[] = {0x8C,0xAA,0xB5,0x7B,0xD5,0xBC};
 struct dome_message currentDomeMessage;
 esp_now_peer_info_t peerDome;
 
@@ -128,6 +128,7 @@ std::array<int16_t, bfs::SbusRx::NUM_CH()> sbus_data;
 void setup()
 {
   sbus_rx.Begin(16,17);
+  delay(2000);
 
   Serial.begin(115200);
 
@@ -147,6 +148,8 @@ void setup()
   pinMode(DOME_SPIN_A_PIN, OUTPUT);
   pinMode(DOME_SPIN_B_PIN, OUTPUT);
 
+  pinMode(AUDIO_OUTPUT_PIN, INPUT);
+  pinMode(AUDIO_BUSY_PIN, INPUT);
 
   // Motor Drivers
   driveController.Enable();
@@ -195,54 +198,57 @@ void setup()
   }
 
 
-  // Setup Wifi and OTA updates
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.println("Connection Failed! Rebooting...");
-    delay(5000);
-    ESP.restart();
-  }
-
-  ArduinoOTA
-    .onStart([]() {
-      String type;
-      if (ArduinoOTA.getCommand() == U_FLASH)
-        type = "sketch";
-      else // U_SPIFFS
-        type = "filesystem";
-
-      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
-    })
-    .onEnd([]() {
-      Serial.println("\nEnd");
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    })
-    .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
-    });
-
-  ArduinoOTA.begin();
+  WiFi.mode(WIFI_STA);  // Needed for ESPNow
+  #ifdef ENABLE_WIFI
+    // Setup Wifi and OTA updates
+    WiFi.begin(ssid, password);
+    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+      Serial.println("Connection Failed! Rebooting...");
+      delay(5000);
+      ESP.restart();
+    }
   
-  Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-  Serial.println(WiFi.macAddress());
+    ArduinoOTA
+      .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+          type = "sketch";
+        else // U_SPIFFS
+          type = "filesystem";
+  
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        Serial.println("Start updating " + type);
+      })
+      .onEnd([]() {
+        Serial.println("\nEnd");
+      })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      })
+      .onError([](ota_error_t error) {
+        Serial.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+        else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      });
+  
+    ArduinoOTA.begin();
+  
+    Serial.println("Ready");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    Serial.println(WiFi.macAddress());
+  #endif
   
   // Sound
   #ifdef AUDIO_ENABLED
-    Serial1.begin(9600, SERIAL_8N1, 4, 5 );
+    Serial1.begin(9600, SERIAL_8N1, 5, 4 );
     myDFPlayer.begin(Serial1);
     myDFPlayer.volume(20);
     myDFPlayer.play(1);
+    Serial.println("Audio Started");
   #endif
 
   servo1.setPeriodHertz(50);
@@ -258,20 +264,29 @@ void setup()
     Serial.println("Problem during ESP-NOW init");
     return;
   }
+
   
   // Register peer
   memcpy(peerDome.peer_addr, dome_mac, 6);
   peerDome.channel = 0;  
   peerDome.encrypt = false;
+
   
   // Add peer        
   if (esp_now_add_peer(&peerDome) != ESP_OK){
-    Serial.println("Failed to add Dome");
+    Serial.println("**** Failed to add Dome");
     return;
   }
 
   currentDomeMessage.psi = false;
-  currentDomeMessage.effect = 0;
+  currentDomeMessage.effect = 1; // Set connection annimation
+  esp_err_t result = esp_now_send(NULL, (uint8_t *) &currentDomeMessage, sizeof(currentDomeMessage));
+  if (result == ESP_OK) {
+    Serial.println("Initial Sent with success");
+  }
+  else {
+    Serial.println("Error sending initial data");
+  }
   
   Serial.println("Startup complete!");
 }
@@ -295,7 +310,6 @@ void loop()
   {
 
     driveMode = get_drive_mode();
-    Serial.print(driveMode);
 
     if (driveMode == DriveMode::Enabled)
     {
@@ -305,7 +319,7 @@ void loop()
       side_to_side();
       //dome_spin();
       dome_servos();
-      #ifdef AUDIO_ENBLED
+      #ifdef AUDIO_ENABLED
         sound_trigger();
       #endif
       #ifdef GLOBAL_DEBUG
@@ -318,7 +332,7 @@ void loop()
       disable_drive();
       //dome_spin();
       dome_servos();
-      #ifdef AUDIO_ENBLED
+      #ifdef AUDIO_ENABLED
         sound_trigger();
       #endif
       #ifdef GLOBAL_DEBUG
@@ -336,6 +350,7 @@ void loop()
     }
 
   }
+  // Run lights on a lower frequency than the main control loop.
   if ((millis() - lastMillis) > 50)
   {
     panel1();
@@ -349,15 +364,42 @@ void loop()
 
     lastMillis = millis();
   }
+   if ((millis() - soundMillis) > 25)
+  {
+    int soundBusy = analogRead(AUDIO_BUSY_PIN);
+    if (soundBusy == 0) 
+    {
+      int soundLevel = analogRead(AUDIO_OUTPUT_PIN);
+      //int soundLevel =1;
+      Serial.println(soundLevel);
+      if (soundLevel > 3600)
+      {
+        currentDomeMessage.psi = 1;
+      }
+      else if (soundLevel < 3600)
+      {
+        currentDomeMessage.psi = 0;
+      }
+      else
+      {
+        currentDomeMessage.psi = 0;
+      }
+      send_dome_message();
+    } else {
+      if (currentDomeMessage.psi == 1)
+      {
+        currentDomeMessage.psi = 0;
+        send_dome_message();
+      }
+     
+    } 
+    soundMillis = millis();
+  } 
   hub.handle();
-  esp_err_t result = esp_now_send(dome_mac, (uint8_t *) &currentDomeMessage, sizeof(currentDomeMessage));
-  if (result == ESP_OK) {
-    Serial.println("Sent with success");
-  }
-  else {
-    Serial.println("Error sending the data");
-  }
-  ArduinoOTA.handle();
 
+
+  #ifdef ENABLE_WIFI
+    ArduinoOTA.handle();
+  #endif
 
 }
