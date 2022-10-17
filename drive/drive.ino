@@ -111,7 +111,6 @@ int average = 0;
 
 unsigned long lastMillis, soundMillis;
 
-uint8_t dome_mac[] = {0x8C,0xAA,0xB5,0x7B,0xD5,0xBC};
 struct dome_message currentDomeMessage;
 esp_now_peer_info_t peerDome;
 
@@ -131,6 +130,8 @@ void setup()
   delay(2000);
 
   Serial.begin(115200);
+
+  body.setBrightness(NEOPIXEL_BRIGHTNESS);
 
   randomSeed(analogRead(0));
 
@@ -254,7 +255,7 @@ void setup()
   servo1.setPeriodHertz(50);
   servo1.attach(DOME_NECK_1, 1000, 2000);
   servo2.setPeriodHertz(50);
-  servo1.attach(DOME_NECK_2, 1000, 2000);
+  servo2.attach(DOME_NECK_2, 1000, 2000);
 
   hub.registerSensor(tel_roll);       //Add sensor to the hub
   hub.registerSensor(tel_pitch);
@@ -317,7 +318,7 @@ void loop()
       main_drive();
       flywheel();
       side_to_side();
-      //dome_spin();
+      dome_spin();
       dome_servos();
       #ifdef AUDIO_ENABLED
         sound_trigger();
@@ -330,7 +331,7 @@ void loop()
     else if (driveMode == DriveMode::Static)
     {
       disable_drive();
-      //dome_spin();
+      dome_spin();
       dome_servos();
       #ifdef AUDIO_ENABLED
         sound_trigger();
@@ -371,7 +372,7 @@ void loop()
     {
       int soundLevel = analogRead(AUDIO_OUTPUT_PIN);
       //int soundLevel =1;
-      Serial.println(soundLevel);
+      //Serial.println(soundLevel);
       if (soundLevel > 3600)
       {
         currentDomeMessage.psi = 1;

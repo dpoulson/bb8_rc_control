@@ -41,6 +41,14 @@ void dome_spin()
 
     domeSpeed = constrain(domeSpeed, -DOME_SPIN_SPEED, DOME_SPIN_SPEED);
 
+    #ifdef DOME_DEBUG
+      Serial.print(domeRaw);
+      Serial.print(" ");
+      Serial.print(domeSpeed);
+      Serial.print(" ");
+      Serial.print(Input4);
+    #endif
+
     if (domeSpeed >= 1)
     {
       analogWrite(DOME_SPIN_A_PIN, abs(domeSpeed));

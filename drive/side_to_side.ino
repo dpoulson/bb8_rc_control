@@ -6,6 +6,7 @@ int s2s_position_difference;
 void side_to_side()
 {
   ch2 = sbus_rx.ch()[CH_DRIVE_S2S];
+  int s2soffset = map(sbus_rx.ch()[15], RC_MIN, RC_MAX, -50, 50);
 
   s2s_target_position = map(ch2, RC_MIN, RC_MAX, S2S_MAX_ANGLE, -S2S_MAX_ANGLE);
 
@@ -22,7 +23,7 @@ void side_to_side()
 
   // Rolling average
   total = total - readings[readIndex];
-  readings[readIndex] = analogRead(S2S_POT_PIN) + S2S_OFFSET;
+  readings[readIndex] = analogRead(S2S_POT_PIN) + S2S_OFFSET + s2soffset;
   total = total + readings[readIndex];
   readIndex = readIndex + 1;
 
@@ -36,7 +37,6 @@ void side_to_side()
   average = (float)total / (float)numReadings;
   pot = average;
 
-  //  pot = analogRead(S2S_POT_PIN) + S2S_OFFSET;
 
   Input2 = (roll + rollOffset) * -1;
   //  Input2 = roll * -1;
@@ -55,10 +55,6 @@ void side_to_side()
   Pk1 = get_pk1();
   PID1.SetTunings(Pk1, Ik1, Dk1);
   PID1.Compute();
-
-//   Serial.print(motorsEnabled);
-//   Serial.print('\t');
-//   Serial.println(Output1);
 
   if (Output1 < 0)
   {
@@ -89,6 +85,8 @@ void side_to_side()
     Serial.print(s2s_target_position);
     Serial.print(" ");
     Serial.print(pot);
+    Serial.print(" ");
+    Serial.print(s2soffset);    
     Serial.print(" |Pk1 ");
     Serial.print(Pk1);
     Serial.print(" ");
