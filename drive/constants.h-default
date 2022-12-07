@@ -2,7 +2,7 @@
 // RC Values
 // - These are defined by the limits of your transmitter
 /*****************************************************************************/
-#define RC_MIN 209
+#define RC_MIN 172
 #define RC_MID 992
 #define RC_MAX 1811
 
@@ -30,6 +30,8 @@
 #define CH_DRIVE_EN 9
 #define CH_ROLL_OFFSET 11
 #define CH_FLYWHEEL_EN 12
+#define CH_SOUND_VOLUME 13
+#define CH_CALIBRATE 14
 
 /*****************************************************************************/
 // Main drive motor controller
@@ -54,7 +56,7 @@
 #define S2S_POT_PIN 34
 #define S2S_MAX_ANGLE 55
 #define S2S_EASING 0.08
-#define S2S_OFFSET 20 // Negative value here will tilt the drive to the right
+#define S2S_OFFSET 550 // Negative value here will tilt the drive to the right
 
 /*****************************************************************************/
 // Dome servos and spin motor
@@ -65,7 +67,38 @@
 #define NOD_EASING 0.1
 #define TILT_EASING 0.075
 #define DOME_SPIN_SPEED 180 // 0 - 255
+#define DOME_POT_OFFSET 15
+#define DOME_NECK_1 13
+#define DOME_NECK_2 14
+uint8_t dome_mac[] = {0x8C,0xAA,0xB5,0x7B,0xD5,0xBC}; //Dome ESP Mac address
 
 /*****************************************************************************/
-// 
+// Wifi
 /*****************************************************************************/
+
+//#define ENABLE_WIFI
+const char* ssid = "wifissid";
+const char* password = "wifipass";
+
+/*****************************************************************************/
+// Audio
+/*****************************************************************************/
+#define AUDIO_ENABLED 1
+#define AUDIO_OUTPUT_PIN 36
+#define AUDIO_BUSY_PIN 39
+
+/*****************************************************************************/
+// NeoPixels
+/*****************************************************************************/
+#define NEOPIXEL_PIN 15
+#define NEOPIXEL_COUNT 20
+#define NEOPIXEL_BRIGHTNESS 30
+
+/*****************************************
+ * Debug
+ */
+#define GLOBAL_DEBUG 1
+#define S2S_DEBUG 1
+//#define DRIVE_DEBUG 1
+//#define IMU_DEBUG 1
+//#define DOME_DEBUG 1 
