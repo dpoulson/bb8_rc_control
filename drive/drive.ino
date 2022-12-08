@@ -1,11 +1,10 @@
 /**
    FrSky SBUs RC control board for Joe's Drive Mk3
 
-   Author:
-      Patrick Ryan
-      pat.m.ryan@gmail.com
-      @circuitBurn
-
+   Authors:
+      Patrick Ryan <pat.m.ryan@gmail.com> - @circuitBurn
+      Darren Poulson <darren.poulson@gmail.com> - Fediverse: dpoulson@fr.droidbuilders.uk
+      
    Pin Mapping:
       TODO:
 
