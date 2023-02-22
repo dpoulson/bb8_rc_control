@@ -10,7 +10,7 @@ int soundBank, soundTriggerRaw, soundRaw;
  */
 void sound_trigger()
 {
-  soundTriggerRaw = sbus_rx.ch()[CH_SOUND_TRIGGER];
+  soundTriggerRaw = sbus_rx.data().ch[CH_SOUND_TRIGGER];
 
   if (soundTriggerRaw != lastSoundTriggerState)
   {
@@ -47,9 +47,9 @@ void sound_trigger()
  */
 void play_sound()
 {
-  int volume = map(sbus_rx.ch()[CH_SOUND_VOLUME], RC_MIN, RC_MAX, 0, 50);
+  int volume = map(sbus_rx.data().ch[CH_SOUND_VOLUME], RC_MIN, RC_MAX, 0, 50);
   myDFPlayer.volume(volume);
-  soundRaw = sbus_rx.ch()[CH_SOUND_BANK];
+  soundRaw = sbus_rx.data().ch[CH_SOUND_BANK];
   soundBank = map(soundRaw, RC_MIN, RC_MAX, 0, 2);
   Serial.println(soundRaw);
   if (soundBank == 2)

@@ -83,7 +83,7 @@ Servo servo1;
 Servo servo2;
 
 /* SbusRx object on Serial1 */
-bfs::SbusRx sbus_rx(&Serial2);
+bfs::SbusRx sbus_rx(&Serial2, 16, 17, true);
 SPortHub hub(0x12, 17);
 SimpleSPortSensor tel_pitch(0x5900);
 SimpleSPortSensor tel_roll(0x5901);
@@ -117,7 +117,7 @@ Adafruit_NeoPixel body = Adafruit_NeoPixel(NEOPIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB
 
 DriveMode driveMode = DriveMode::Disabled;
 CalibrationMode calibrationMode = CalibrationMode::CalOff;
-std::array<int16_t, bfs::SbusRx::NUM_CH()> sbus_data;
+std::array<int16_t, bfs::SbusData::NUM_CH> sbus_data;
 
 
 /*********************************
@@ -125,7 +125,7 @@ std::array<int16_t, bfs::SbusRx::NUM_CH()> sbus_data;
  */
 void setup()
 {
-  sbus_rx.Begin(16,17);
+  sbus_rx.Begin();
   delay(2000);
 
   Serial.begin(115200);

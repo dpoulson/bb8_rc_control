@@ -21,7 +21,7 @@ void dome_spin()
 {
   if (is_dome_rotation_enabled())
   {
-    domeRaw = sbus_rx.ch()[CH_DOME_SPIN];
+    domeRaw = sbus_rx.data().ch[CH_DOME_SPIN];
 
     if (domeRaw > RC_MIN + 100 && domeRaw < RC_MAX -100)
     {
@@ -78,7 +78,7 @@ void dome_servos()
   if (is_dome_movement_enabled())
   {
     // Forwards-backwards
-    ch3 = sbus_rx.ch()[CH_DOME_TILT_Y];
+    ch3 = sbus_rx.data().ch[CH_DOME_TILT_Y];
     targetNod = map(ch3, RC_MIN, RC_MAX, 180, 0);
 
     // TODO: pitch correction
@@ -96,7 +96,7 @@ void dome_servos()
     varServo2 = currentNod;
 
     // Left-right
-    ch4 = sbus_rx.ch()[CH_DOME_TILT_X];
+    ch4 = sbus_rx.data().ch[CH_DOME_TILT_X];
     targetSide = map(ch4, RC_MIN, RC_MAX, 60, -60);
 
     diffSide = targetSide - currentSide;

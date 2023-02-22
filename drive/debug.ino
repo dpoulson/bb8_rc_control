@@ -1,8 +1,8 @@
 void debug_rc_inputs()
 {
-  for (int i = 0; i < sbus_rx.ch().size(); i++)
+  for (int i = 0; i < 16; i++)
   {
-    Serial.print(sbus_rx.ch()[i]);
+    Serial.print(sbus_rx.data().ch[i]);
     Serial.print("\t");
   }
   Serial.println();

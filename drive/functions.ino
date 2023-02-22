@@ -10,12 +10,12 @@ float mapfloat(long x, long in_min, long in_max, long out_min, long out_max)
  */
 bool is_drive_enabled()
 {
-  return map(sbus_rx.ch()[CH_DRIVE_EN], RC_MIN, RC_MAX, 0, 1) == 1;
+  return map(sbus_rx.data().ch[CH_DRIVE_EN], RC_MIN, RC_MAX, 0, 1) == 1;
 }
 
 DriveMode get_drive_mode()
 {
-  int driveVal = sbus_rx.ch()[CH_DRIVE_EN];
+  int driveVal = sbus_rx.data().ch[CH_DRIVE_EN];
   if (driveVal == RC_MAX)
   {
     return DriveMode::Enabled;
@@ -31,7 +31,7 @@ DriveMode get_drive_mode()
 }
 CalibrationMode get_calibration_mode()
 {
-  int calibrationVal = sbus_rx.ch()[CH_CALIBRATE];
+  int calibrationVal = sbus_rx.data().ch[CH_CALIBRATE];
   if (calibrationVal == RC_MAX)
   {
     return CalibrationMode::CalOff;
@@ -111,12 +111,12 @@ bool is_dome_movement_enabled()
 */
 double get_pk1()
 {
-  return mapfloat(sbus_rx.ch()[CH_ROLL_OFFSET], RC_MIN, RC_MAX, 0, 30);
+  return mapfloat(sbus_rx.data().ch[CH_ROLL_OFFSET], RC_MIN, RC_MAX, 0, 30);
 }
 
 double get_roll_multiplier()
 {
-  return mapfloat(sbus_rx.ch()[CH_ROLL_OFFSET], RC_MIN, RC_MAX, 0, 1);
+  return mapfloat(sbus_rx.data().ch[CH_ROLL_OFFSET], RC_MIN, RC_MAX, 0, 1);
 }
 
 void debug_print()

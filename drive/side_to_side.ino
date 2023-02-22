@@ -5,8 +5,8 @@ int s2s_position_difference;
 
 void side_to_side()
 {
-  ch2 = sbus_rx.ch()[CH_DRIVE_S2S];
-  int s2soffset = map(sbus_rx.ch()[15], RC_MIN, RC_MAX, -50, 50);
+  ch2 = sbus_rx.data().ch[CH_DRIVE_S2S];
+  int s2soffset = map(sbus_rx.data().ch[15], RC_MIN, RC_MAX, -50, 50);
 
   s2s_target_position = map(ch2, RC_MIN, RC_MAX, S2S_MAX_ANGLE, -S2S_MAX_ANGLE);
 
@@ -90,7 +90,7 @@ void side_to_side()
     Serial.print(" |Pk1 ");
     Serial.print(Pk1);
     Serial.print(" ");
-    Serial.print(sbus_rx.ch()[CH_ROLL_OFFSET]);
+    Serial.print(sbus_rx.data().ch[CH_ROLL_OFFSET]);
     Serial.print(" |1 ");
     Serial.print(Input1);
     Serial.print(" ");

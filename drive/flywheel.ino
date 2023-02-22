@@ -6,10 +6,10 @@ bool flywheelEnabled = false;
 */
 void flywheel()
 {
-  flywheelRaw = sbus_rx.ch()[CH_FLYWHEEL];
+  flywheelRaw = sbus_rx.data().ch[CH_FLYWHEEL];
   flywheelRaw = constrain(flywheelRaw, RC_MIN, RC_MAX);
   flywheelSpeed = map(flywheelRaw, RC_MIN, RC_MAX, 255, -255);
-  flywheelEnabled = sbus_rx.ch()[CH_FLYWHEEL_EN] == RC_MAX;
+  flywheelEnabled = sbus_rx.data().ch[CH_FLYWHEEL_EN] == RC_MAX;
 
   if (!flywheelEnabled || in_rc_deadband(flywheelRaw))
   {
